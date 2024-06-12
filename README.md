@@ -61,3 +61,4 @@ The default and available options are listed [here](./lua/direnv-nvim/opts.lua).
 - [ ] Further customisation of output
 - [ ] Better docs
 - [ ] Test more rigorously :)
+- [ ] Explore sync loading for FileType, async loading for BufEnter
