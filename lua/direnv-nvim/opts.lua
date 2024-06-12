@@ -4,7 +4,7 @@ local default_opts = {
 		autocmd_pattern = "*",
 	},
 	hook = {
-		msg = "status", -- "diff" | "status",
+		msg = "status", -- "diff" | "status" | nil,
 	},
 }
 
