@@ -48,7 +48,8 @@ M.hook = function(opts)
 end
 
 M.setup = function(opts)
-	if opts == nil then
+	opts = vim.tbl_deep_extend("force", require("direnv-nvim/opts"), opts)
+	if opts == nil or opts == {} then
 		opts = require("direnv-nvim/opts")
 	end
 	vim.api.nvim_create_autocmd(opts.setup.autocmd_event, {
