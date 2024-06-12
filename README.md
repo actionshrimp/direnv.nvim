@@ -41,6 +41,7 @@ If you'd rather try configuring the autocmds yourself, you can use something lik
 ```
 
 or to bind the direnv hook to a key, you can use:
+```lua
 {
     "actionshrimp/direnv.nvim", config = function() 
         vim.keymap.set("n", "<LEADER>dr", function ()
@@ -48,6 +49,7 @@ or to bind the direnv hook to a key, you can use:
         end
      end
 }
+```
 
 #### Options
 
