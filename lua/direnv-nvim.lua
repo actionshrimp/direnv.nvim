@@ -67,6 +67,12 @@ M.setup = function(opts)
 			M.hook(opts)
 		end,
 	})
+	vim.api.nvim_create_autocmd("BufEnter", {
+		pattern = "*",
+		callback = function()
+			M.hook(opts)
+		end,
+	})
 end
 
 return M
