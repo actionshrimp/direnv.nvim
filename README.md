@@ -52,3 +52,9 @@ or to bind the direnv hook to a key, you can use:
 #### Options
 
 The default and available options are listed [here](./lua/direnv-nvim/opts.lua).
+
+## TODO
+
+- [ ] Add functions/mappings for 'direnv' allow
+- [ ] Further customisation of output
+- [ ] Better docs
