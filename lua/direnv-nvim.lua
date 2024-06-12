@@ -47,19 +47,9 @@ M.hook = function(opts)
 	end
 end
 
-local default_opts = {
-	setup = {
-		autocmd_event = "FileType",
-		autocmd_pattern = "*",
-	},
-	hook = {
-		msg = "status", -- "diff" | "status",
-	},
-}
-
 M.setup = function(opts)
 	if opts == nil then
-		opts = default_opts
+		opts = require("direnv-nvim/opts")
 	end
 	vim.api.nvim_create_autocmd(opts.setup.autocmd_event, {
 		pattern = opts.setup.autocmd_pattern,
