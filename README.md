@@ -58,3 +58,4 @@ The default and available options are listed [here](./lua/direnv-nvim/opts.lua).
 - [ ] Add functions/mappings for 'direnv' allow
 - [ ] Further customisation of output
 - [ ] Better docs
+- [ ] Test more rigorously :)
