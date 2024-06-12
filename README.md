@@ -62,3 +62,4 @@ The default and available options are listed [here](./lua/direnv-nvim/opts.lua).
 - [ ] Better docs
 - [ ] Test more rigorously :)
 - [ ] Explore sync loading for FileType, async loading for BufEnter
+- [ ] fix in the case of oil:// protocol files
