@@ -6,7 +6,7 @@ Currently the direnv environment loads synchronously, to make sure it is availab
 
 ## Why not use `direnv.vim`?
 
-[direnv.vim](https://github.com/direnv/direnv.vim) is the officially blessed vim direnv plugin, however I found that due to it loading asynchronously, often LSPs would try to intialise before my direnv environment had loaded. Perhaps there is a way to configure this? However I was able to write the basic implementation of this in lua more quickly than I was able to understand the vimscript :-)
+[direnv.vim](https://github.com/direnv/direnv.vim) is the officially blessed vim direnv plugin, however I found that due to the load ordering it provides by default, LSPs would try to intialise before my direnv environment had loaded. Perhaps there is a way to configure this? However I was able to write the basic implementation of this in lua more quickly than I was able to understand the vimscript :-)
 
 ## Setup
 
