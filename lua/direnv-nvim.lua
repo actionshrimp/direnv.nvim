@@ -23,7 +23,10 @@ M.status_ = function(cwd)
 		vim.notify("direnv: environment clear")
 	else
 		vim.cmd("redraw")
-		vim.notify("direnv: environment from: " .. status.state.loadedRC.path)
+		local loaded = status.state.loadedRC.allowed == 0
+		local s = loaded and "loaded" or "blocked"
+		vim.notify("direnv: environment from " .. status.state.loadedRC.path .. " loaded: " .. s)
+		return loaded
 	end
 end
 M.status = function()
@@ -47,9 +50,9 @@ M.allow = function()
 end
 vim.api.nvim_create_user_command("DirenvAllow", M.allow, { desc = "direnv allow" })
 
-M.hook_ = function(cwd)
-	local export_result = vim.system({ "direnv", "export", "json" }, { text = true, cwd = cwd }):wait()
+M.hook_body = function(export_result)
 	if export_result.stdout ~= "" then
+		vim.notify(export_result.stdout)
 		for k, v in pairs(vim.json.decode(export_result.stdout)) do
 			if v == vim.NIL then
 				vim.env[k] = nil
@@ -72,13 +75,31 @@ M.hook_ = function(cwd)
 		elseif OPTS.hook.msg == "status" then
 			M.status()
 		end
+		OPTS.on_env_update()
+	end
+end
+
+M.hook_ = function(cwd)
+	vim.notify("firing hook for " .. cwd)
+	if OPTS.async then
+		vim.system({ "direnv", "export", "json" }, { text = true, cwd = cwd }, function()
+			vim.schedule(function()
+				require("direnv-nvim").OPTS.on_env_update()
+			end)
+		end)
+	else
+		local res = vim.system({ "direnv", "export", "json" }, { text = true, cwd = cwd })
+		local export_result = res:wait()
+		M.hook_body(export_result)
 	end
 end
 
 M.hook = function()
 	local cwd = get_cwd()
 	if cwd ~= nil then
-		M.hook_(cwd)
+		if M.status_(cwd) then
+			M.hook_(cwd)
+		end
 	end
 end
 vim.api.nvim_create_user_command("DirenvHook", M.allow, { desc = "direnv hook" })
@@ -93,6 +114,7 @@ local setup_dir = function()
 end
 
 local setup_buffer = function()
+	-- # TODO double firing due to this guy!
 	vim.api.nvim_create_autocmd(OPTS.buffer_setup.autocmd_event, {
 		pattern = OPTS.buffer_setup.autocmd_pattern,
 		callback = function()
@@ -109,6 +131,7 @@ end
 
 M.setup = function(opts)
 	OPTS = vim.tbl_deep_extend("force", OPTS, opts)
+	M.OPTS = OPTS
 	if OPTS.type == "buffer" then
 		setup_buffer()
 	end

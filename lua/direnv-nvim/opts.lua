@@ -9,7 +9,7 @@ local default_opts = {
 		autocmd_pattern = "*",
 	},
 	async = false,
-	async_cb = function() end,
+	on_env_update = function() end,
 	hook = {
 		msg = "status", -- "diff" | "status" | nil,
 	},
