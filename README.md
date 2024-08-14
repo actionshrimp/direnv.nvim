@@ -4,38 +4,42 @@ A neovim wrapper around `direnv`, in pure lua.
 
 ## Why not use `direnv.vim`?
 
-[direnv.vim](https://github.com/direnv/direnv.vim) is the officially blessed vim direnv plugin, however I found that with the out-of-the-box configuration, the neovim LSP would try to intialise before my direnv environment had loaded, which, if the LSP server itself is provided by the direnv environment (e.g. via [nix-direnv](https://github.com/nix-community/nix-direnv)) can cause some problems!
-
-There is likely a way of working around that problem with direnv/direnv.vim, but I was able to write the basic implementation of this in lua more quickly than I was able to understand the vimscript, and learn a bit about lua, neovim and direnv in the process.
+[direnv.vim](https://github.com/direnv/direnv.vim) is the officially blessed vim direnv plugin. This is a pure lua version, with some potential upsides (more control of load order), and some potential downsides (less well established and tested, and potentially more complicated to configure depending on what you're trying to achieve).
 
 ## Setup
+
+:exclamation: Note - with `direnv`, load order is particularly important! `direnv`'s evaluation takes time, so if Neovim (via e.g. a language plugin's LSP) is expecting a certain environment to be provided by `direnv`, you want to make sure that `direnv.nvim` has completed before other code tries to use that environment.
+
+(Aside for `nix` users: this is particularly pertinent if using `nix-direnv` to load LSP server binaries for your project. In this situation you might also want to look into `nix_direnv_manual_reload`).
 
 ### lazy.nvim
 
 #### Defaults
 
-Make sure this entry is added early in your list of deps, before any LSPs that would be made available by a particular direnv environment are set up.
+In light of the point above, make sure this entry is added early in your list of deps, before any language specific plugins that may require a binary:
 
 ```lua
 { "actionshrimp/direnv.nvim", opts = {} }
+...
 ```
 
-This will install direnv.nvim and run the `setup` function, which registers autocmds to automatically update the direnv environment when you open files and switch buffers.
+##### What environment? 
 
-*Note:*
+By default, the directory passed to direnv is the directory of the __current buffer__, rather than vim's current working directory (controlled by `:cd`, `:set autochdir`, etc). If you would rather have the direnv environment tied to the vim cwd, check out `opts.type = 'dir'` below.
 
-By default, the directory passed to direnv is the directory of the _current buffer_, rather than vim's current working directory (controlled by `:cd`, `:set autochdir`, etc). If you would rather have the direnv environment tied to the vim cwd, check out `opts.type = 'dir'` below.
+##### Synchronous?
 
+By default, `direnv.nvim` loads the direnv synchronously, which means navigating to a specific buffer can take the same amount of time it would take to `cd` into a directory controlled by that `direnv` environment. This can be a bit jarring when switching buffers, particularly for longer environment load times, but ensures load order as mentioned above. If you'd rather avoid this, look into the `async = true` option. With this set, the function `on_env_update` is called after the environment has loaded, which allows you to do any specific setup required.
 
-#### Available options
+#### All available options
 
-The full list of available options and their defaults are loaded from [here](./lua/direnv-nvim/opts.lua). Here's a summary of them:
+The full list of available options and their defaults are loaded from [here](./lua/direnv-nvim/opts.lua) Here's a summary of them:
 
 ```
 {
   type = "buffer", -- "buffer" | "dir"
-    -- "buffer" direnv uses directory based on the current buffer
-    -- "dir" direnv uses directory based on vim's cwd (see this with `:pwd`)
+    -- "buffer" direnv uses directory based on the current buffer. By default this is based around the 'FileType' autocmd.
+    -- "dir" direnv uses directory based on vim's cwd (see this with `:pwd`). By default this is based around the 'DirChanged' autocmd.
 
   buffer_setup = ...
     -- allows you to control the type = 'buffer' setup's autocmd options
@@ -47,8 +51,8 @@ The full list of available options and their defaults are loaded from [here](./l
     -- if false, loading environment from direnv into vim is done synchronously. This will block the UI, so if the direnv setup takes a while, you may want to look into setting this to true.
     -- if true, vim will evaluate the direnv environment in the background, and then call the function passed as opts.async_cb once evaluation is complete.
 
-  async_cb = function () end,
-    -- called after direnv evaluation if opts.async = true
+  on_env_update = function () end,
+    -- called after direnv updates
 
   hook = {
     msg = "status", -- "status" | "diff" | nil
@@ -59,7 +63,6 @@ The full list of available options and their defaults are loaded from [here](./l
   }
 }
 ```
-
 #### Manually firing the hook
 
 If you'd rather try configuring the autocmds yourself, you can use something like:
@@ -77,22 +80,11 @@ If you'd rather try configuring the autocmds yourself, you can use something lik
 }
 ```
 
-or to bind the direnv hook to a key, you can use:
-```lua
-{
-    "actionshrimp/direnv.nvim", config = function() 
-        vim.keymap.set("n", "<LEADER>dr", function ()
-            require("direnv-nvim").hook(opts)
-        end
-     end
-}
+There is a variant of the `hook` function, `hook_(dir)`, which takes the directory you want to evaluate the direnv environment for directly - currently `direnv.nvim`'s options still apply in some areas. You can also call the vim command `:DirenvHook` to fire the hook function manually.
+
+The plugin also provides lua functions and vim commands for performing `direnv status` and `direnv allow`, via:
+
 ```
-
-
-## TODO
-
-- [x] Add functions/mappings for 'direnv' allow
-- [ ] Further customisation of output
-- [ ] Better docs
-- [ ] Test more rigorously :)
-- [ ] Explore sync loading for FileType, async loading for BufEnter
+:DirenvStatus
+:DirenvAllow
+```
