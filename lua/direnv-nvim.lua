@@ -15,18 +15,27 @@ local get_cwd = function()
 	end
 end
 
+local rc_allowed = function(cwd)
+	local status_result = vim.system({ "direnv", "status", "--json" }, { text = true, cwd = cwd }):wait()
+	local status = vim.json.decode(status_result.stdout)
+	if status.state.foundRC == vim.NIL then
+		return false
+	else
+		return status.state.foundRC.allowed == 0
+	end
+end
+
 M.status_ = function(cwd)
 	local status_result = vim.system({ "direnv", "status", "--json" }, { text = true, cwd = cwd }):wait()
 	local status = vim.json.decode(status_result.stdout)
-	if status.state.loadedRC == vim.NIL then
+	if status.state.foundRC == vim.NIL then
 		vim.cmd("redraw")
 		vim.notify("direnv: environment clear")
 	else
 		vim.cmd("redraw")
-		local loaded = status.state.loadedRC.allowed == 0
-		local s = loaded and "loaded" or "blocked"
-		vim.notify("direnv: environment from " .. status.state.loadedRC.path .. " loaded: " .. s)
-		return loaded
+		local loaded = status.state.foundRC.allowed == 0
+		local s = loaded and "allowed" or "blocked"
+		vim.notify("direnv: environment from " .. status.state.foundRC.path .. " (" .. s .. ")")
 	end
 end
 M.status = function()
@@ -52,7 +61,6 @@ vim.api.nvim_create_user_command("DirenvAllow", M.allow, { desc = "direnv allow"
 
 M.hook_body = function(export_result)
 	if export_result.stdout ~= "" then
-		vim.notify(export_result.stdout)
 		for k, v in pairs(vim.json.decode(export_result.stdout)) do
 			if v == vim.NIL then
 				vim.env[k] = nil
@@ -80,7 +88,6 @@ M.hook_body = function(export_result)
 end
 
 M.hook_ = function(cwd)
-	vim.notify("firing hook for " .. cwd)
 	if OPTS.async then
 		vim.system({ "direnv", "export", "json" }, { text = true, cwd = cwd }, function()
 			vim.schedule(function()
@@ -97,8 +104,10 @@ end
 M.hook = function()
 	local cwd = get_cwd()
 	if cwd ~= nil then
-		if M.status_(cwd) then
+		if rc_allowed(cwd) then
 			M.hook_(cwd)
+		else
+			vim.notify("direnv envionment is blocked, please direnv allow")
 		end
 	end
 end
