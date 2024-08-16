@@ -15,6 +15,16 @@ local get_cwd = function()
 	end
 end
 
+local rc_found = function(cwd)
+	local status_result = vim.system({ "direnv", "status", "--json" }, { text = true, cwd = cwd }):wait()
+	local status = vim.json.decode(status_result.stdout)
+	if status.state.foundRC == vim.NIL then
+		return false
+	else
+		return true
+	end
+end
+
 local rc_allowed = function(cwd)
 	local status_result = vim.system({ "direnv", "status", "--json" }, { text = true, cwd = cwd }):wait()
 	local status = vim.json.decode(status_result.stdout)
@@ -104,9 +114,9 @@ end
 M.hook = function()
 	local cwd = get_cwd()
 	if cwd ~= nil then
-		if rc_allowed(cwd) then
+		if rc_found(cwd) and rc_allowed(cwd) then
 			M.hook_(cwd)
-		else
+		elseif rc_found(cwd) then
 			vim.notify("direnv envionment is blocked, please direnv allow")
 		end
 	end
