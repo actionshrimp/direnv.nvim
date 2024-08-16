@@ -1,79 +1,162 @@
 local M = {}
+local OPTS = require("direnv-nvim/opts")
+local LOADED = nil
 
 local get_cwd = function()
-	local buf = vim.api.nvim_buf_get_name(0)
-	if vim.fn.filereadable(buf) == 1 then
-		return vim.fs.dirname(buf)
-	else
-		return nil
+	if OPTS.type == "buffer" then
+		local buf = vim.api.nvim_buf_get_name(0)
+		if vim.fn.filereadable(buf) == 1 then
+			return vim.fs.dirname(buf)
+		else
+			return nil
+		end
+	elseif OPTS.type == "dir" then
+		return vim.loop.cwd()
 	end
 end
 
+local rc_found = function(cwd)
+	local status_result = vim.system({ "direnv", "status", "--json" }, { text = true, cwd = cwd }):wait()
+	local status = vim.json.decode(status_result.stdout)
+	if status.state.foundRC == vim.NIL then
+		return false
+	else
+		return true
+	end
+end
+
+local rc_allowed = function(cwd)
+	local status_result = vim.system({ "direnv", "status", "--json" }, { text = true, cwd = cwd }):wait()
+	local status = vim.json.decode(status_result.stdout)
+	if status.state.foundRC == vim.NIL then
+		return false
+	else
+		return status.state.foundRC.allowed == 0
+	end
+end
+
+M.status_ = function(cwd)
+	local status_result = vim.system({ "direnv", "status", "--json" }, { text = true, cwd = cwd }):wait()
+	local status = vim.json.decode(status_result.stdout)
+	if status.state.foundRC == vim.NIL then
+		vim.cmd("redraw")
+		vim.notify("direnv: environment clear")
+	else
+		vim.cmd("redraw")
+		local loaded = status.state.foundRC.allowed == 0
+		local s = loaded and "allowed" or "blocked"
+		vim.notify("direnv: environment from " .. status.state.foundRC.path .. " (" .. s .. ")")
+	end
+end
 M.status = function()
 	local cwd = get_cwd()
 	if cwd ~= nil then
-		local status_result = vim.system({ "direnv", "status", "--json" }, { text = true, cwd = get_cwd() }):wait()
-		local status = vim.json.decode(status_result.stdout)
-		-- print(status_result.stdout)
-		-- print(vim.inspect(status))
-		if status.state.loadedRC == vim.NIL then
-			vim.cmd("redraw")
-			vim.notify("direnv: environment clear")
-		else
-			vim.cmd("redraw")
-			vim.notify("direnv: environment from: " .. status.state.loadedRC.path)
-		end
+		M.status_(cwd)
 	end
 end
+vim.api.nvim_create_user_command("DirenvStatus", M.status, { desc = "direnv status" })
 
-M.hook = function(opts)
+M.allow_ = function(cwd)
+	vim.system({ "direnv", "allow" }, { text = true, cwd = cwd }):wait()
+	M.status_(cwd)
+end
+
+M.allow = function()
 	local cwd = get_cwd()
 	if cwd ~= nil then
-		local export_result = vim.system({ "direnv", "export", "json" }, { text = true, cwd = cwd }):wait()
-		if export_result.stdout ~= "" then
-			for k, v in pairs(vim.json.decode(export_result.stdout)) do
-				if v == vim.NIL then
-					vim.env[k] = nil
-				else
-					vim.env[k] = v
-				end
-			end
+		M.allow_(cwd)
+	end
+end
+vim.api.nvim_create_user_command("DirenvAllow", M.allow, { desc = "direnv allow" })
 
-			if opts.hook.msg == "diff" then
-				local display_msg = export_result.stderr
-				if display_msg ~= nil then
-					local lines = vim.split(display_msg, "\n", { trimempty = true })
-					local diff_msg = lines[#lines]
-					if string.len(diff_msg) > vim.o.columns then
-						diff_msg = string.sub(diff_msg, 1, vim.o.columns - 20) .. "..."
-					end
-					vim.cmd("redraw")
-					vim.notify(diff_msg, vim.log.levels.INFO)
-				end
-			elseif opts.hook.msg == "status" then
-				M.status()
+M.hook_body = function(export_result)
+	if export_result.stdout ~= "" then
+		for k, v in pairs(vim.json.decode(export_result.stdout)) do
+			if v == vim.NIL then
+				vim.env[k] = nil
+			else
+				vim.env[k] = v
 			end
 		end
+
+		if OPTS.hook.msg == "diff" then
+			local display_msg = export_result.stderr
+			if display_msg ~= nil then
+				local lines = vim.split(display_msg, "\n", { trimempty = true })
+				local diff_msg = lines[#lines]
+				if string.len(diff_msg) > vim.o.columns then
+					diff_msg = string.sub(diff_msg, 1, vim.o.columns - 20) .. "..."
+				end
+				vim.cmd("redraw")
+				vim.notify(diff_msg, vim.log.levels.INFO)
+			end
+		elseif OPTS.hook.msg == "status" then
+			M.status()
+		end
+		OPTS.on_env_update()
 	end
 end
 
-M.setup = function(opts)
-	opts = vim.tbl_deep_extend("force", require("direnv-nvim/opts"), opts)
-	if opts == nil or opts == {} then
-		opts = require("direnv-nvim/opts")
+M.hook_ = function(cwd)
+	if OPTS.async then
+		vim.system({ "direnv", "export", "json" }, { text = true, cwd = cwd }, function()
+			vim.schedule(function()
+				require("direnv-nvim").OPTS.on_env_update()
+			end)
+		end)
+	else
+		local res = vim.system({ "direnv", "export", "json" }, { text = true, cwd = cwd })
+		local export_result = res:wait()
+		M.hook_body(export_result)
 	end
-	vim.api.nvim_create_autocmd(opts.setup.autocmd_event, {
-		pattern = opts.setup.autocmd_pattern,
+end
+
+M.hook = function()
+	local cwd = get_cwd()
+	if cwd ~= nil then
+		if rc_found(cwd) and rc_allowed(cwd) then
+			M.hook_(cwd)
+		elseif rc_found(cwd) then
+			vim.notify("direnv envionment is blocked, please direnv allow")
+		end
+	end
+end
+vim.api.nvim_create_user_command("DirenvHook", M.allow, { desc = "direnv hook" })
+
+local setup_dir = function()
+	vim.api.nvim_create_autocmd(OPTS.dir_setup.autocmd_event, {
+		pattern = OPTS.dir_setup.autocmd_pattern,
 		callback = function()
-			M.hook(opts)
+			M.hook()
+		end,
+	})
+end
+
+local setup_buffer = function()
+	-- # TODO double firing due to this guy!
+	vim.api.nvim_create_autocmd(OPTS.buffer_setup.autocmd_event, {
+		pattern = OPTS.buffer_setup.autocmd_pattern,
+		callback = function()
+			M.hook()
 		end,
 	})
 	vim.api.nvim_create_autocmd("BufEnter", {
 		pattern = "*",
 		callback = function()
-			M.hook(opts)
+			M.hook()
 		end,
 	})
+end
+
+M.setup = function(opts)
+	OPTS = vim.tbl_deep_extend("force", OPTS, opts)
+	M.OPTS = OPTS
+	if OPTS.type == "buffer" then
+		setup_buffer()
+	end
+	if OPTS.type == "dir" then
+		setup_dir()
+	end
 end
 
 return M
