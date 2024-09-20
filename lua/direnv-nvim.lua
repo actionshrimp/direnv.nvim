@@ -99,9 +99,9 @@ end
 
 M.hook_ = function(cwd)
 	if OPTS.async then
-		vim.system({ "direnv", "export", "json" }, { text = true, cwd = cwd }, function()
+		vim.system({ "direnv", "export", "json" }, { text = true, cwd = cwd }, function(export_result)
 			vim.schedule(function()
-				require("direnv-nvim").OPTS.on_env_update()
+				M.hook_body(export_result)
 			end)
 		end)
 	else
