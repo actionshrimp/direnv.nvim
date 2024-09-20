@@ -133,15 +133,8 @@ local setup_dir = function()
 end
 
 local setup_buffer = function()
-	-- # TODO double firing due to this guy!
 	vim.api.nvim_create_autocmd(OPTS.buffer_setup.autocmd_event, {
 		pattern = OPTS.buffer_setup.autocmd_pattern,
-		callback = function()
-			M.hook()
-		end,
-	})
-	vim.api.nvim_create_autocmd("BufEnter", {
-		pattern = "*",
 		callback = function()
 			M.hook()
 		end,
