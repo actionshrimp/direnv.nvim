@@ -1,7 +1,7 @@
 local default_opts = {
 	type = "buffer", -- "buffer" | "dir"
 	buffer_setup = {
-		autocmd_event = "FileType",
+		autocmd_event = "BufEnter",
 		autocmd_pattern = "*",
 	},
 	dir_setup = {
