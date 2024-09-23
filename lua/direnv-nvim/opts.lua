@@ -10,6 +10,7 @@ local default_opts = {
 	},
 	async = false,
 	on_env_update = function() end,
+	on_no_direnv = function() end,
 	hook = {
 		msg = "status", -- "diff" | "status" | nil,
 	},

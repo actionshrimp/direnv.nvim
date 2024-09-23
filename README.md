@@ -54,6 +54,9 @@ The full list of available options and their defaults are loaded from [here](./l
   on_env_update = function () end,
     -- called after direnv updates.
 
+  on_no_direnv = function () end,
+    -- called when no direnv is found for the current buffer.
+
   hook = {
     msg = "status", -- "status" | "diff" | nil
     -- message printed to the status line when direnv environment changes.
