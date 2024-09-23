@@ -23,7 +23,7 @@ In light of the point above, make sure that this entry is added early in your li
 ...
 ```
 
-##### What environment? 
+##### What environment?
 
 By default, the directory passed to direnv is the directory of the __current buffer__, rather than vim's current working directory (controlled by `:cd`, `:set autochdir`, etc). If you would rather have the direnv environment tied to the vim cwd, check out `opts.type = 'dir'` below.
 
@@ -66,6 +66,7 @@ The full list of available options and their defaults are loaded from [here](./l
   }
 }
 ```
+
 #### Manually firing the hook
 
 If you'd rather try configuring the `autocmd`s yourself, you can use something like this:
@@ -92,4 +93,60 @@ The plugin also provides lua functions and vim commands for performing `direnv s
 ```
 :DirenvStatus
 :DirenvAllow
+```
+
+### LSP config examples
+
+Here are some examples on how to load the direnv before the LSP starts:
+
+``` lua
+-- direnv-nvim.lua
+
+-- Setup signals for when direnv.nvim is finished
+require("direnv-nvim").setup({
+	async = true, -- not strictly necessary
+	on_env_update = function()
+		vim.api.nvim_exec_autocmds("User", { pattern = "DirenvLoaded" })
+	end,
+	on_no_direnv = function()
+		vim.api.nvim_exec_autocmds("User", { pattern = "DirenvNotFound" })
+	end,
+})
+```
+
+#### Using nvim-lspconfig
+
+``` lua
+-- lspconfig.lua
+
+-- configure your LPSs the usual way, but adding `autostart = false`
+require("lspconfig").lua_ls.setup({ autostart = false })
+require("lspconfig").clangd.setup({ autostart = false })
+
+-- Start lsp only after direnv.nvim is finished
+vim.api.nvim_create_autocmd("User", {
+	pattern = { "DirenvLoaded", "DirenvNotFound" }, -- this example starts the lsp when the direnv was loaded or when there is no .envrc found
+	callback = function()
+		vim.cmd("LspStart")
+	end,
+})
+```
+
+#### Using [rustaceanvim](https://github.com/mrcjkb/rustaceanvim)
+
+``` lua
+vim.g.rustaceanvim = {
+	server = {
+		auto_attach = function(bufnr)
+			vim.api.nvim_create_autocmd("User", {
+				pattern = { "DirenvLoaded", "DirenvNotFound" },
+				callback = function()
+					require("rustaceanvim.lsp").start(bufnr)
+				end,
+				once = true,
+			})
+			return false
+		end,
+	},
+}
 ```
