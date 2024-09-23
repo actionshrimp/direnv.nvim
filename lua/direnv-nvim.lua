@@ -98,6 +98,7 @@ M.hook_body = function(export_result)
 end
 
 M.hook_ = function(cwd)
+	OPTS.on_hook_start()
 	if OPTS.async then
 		vim.system({ "direnv", "export", "json" }, { text = true, cwd = cwd }, function(export_result)
 			vim.schedule(function()

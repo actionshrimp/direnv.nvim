@@ -23,7 +23,7 @@ In light of the point above, make sure that this entry is added early in your li
 ...
 ```
 
-##### What environment? 
+##### What environment?
 
 By default, the directory passed to direnv is the directory of the __current buffer__, rather than vim's current working directory (controlled by `:cd`, `:set autochdir`, etc). If you would rather have the direnv environment tied to the vim cwd, check out `opts.type = 'dir'` below.
 
@@ -51,6 +51,9 @@ The full list of available options and their defaults are loaded from [here](./l
     -- if false, loading environment from direnv into vim is done synchronously. This will block the UI, so if the direnv setup takes a while, you may want to look into setting this to true.
     -- if true, vim will evaluate the direnv environment in the background, and then call the function passed as `opts.on_env_update` once evaluation is complete.
 
+  on_hook_start = function () end,
+    -- called just before executing direnv.
+
   on_env_update = function () end,
     -- called after direnv updates.
 
@@ -66,6 +69,7 @@ The full list of available options and their defaults are loaded from [here](./l
   }
 }
 ```
+
 #### Manually firing the hook
 
 If you'd rather try configuring the `autocmd`s yourself, you can use something like this:
