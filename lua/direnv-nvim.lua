@@ -118,6 +118,8 @@ M.hook = function()
 			M.hook_(cwd)
 		elseif rc_found(cwd) then
 			vim.notify("direnv envionment is blocked, please direnv allow")
+		else
+			OPTS.on_no_direnv()
 		end
 	end
 end
