@@ -51,6 +51,9 @@ The full list of available options and their defaults are loaded from [here](./l
     -- if false, loading environment from direnv into vim is done synchronously. This will block the UI, so if the direnv setup takes a while, you may want to look into setting this to true.
     -- if true, vim will evaluate the direnv environment in the background, and then call the function passed as `opts.on_env_update` once evaluation is complete.
 
+  on_hook_start = function () end,
+    -- called just before executing direnv.
+
   on_env_update = function () end,
     -- called after direnv updates.
 
