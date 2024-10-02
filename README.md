@@ -60,6 +60,9 @@ The full list of available options and their defaults are loaded from [here](./l
   on_no_direnv = function () end,
     -- called when no direnv is found for the current buffer.
 
+  on_not_allowed = function () end,
+    -- called when the direnv is found but not allowed.
+
   hook = {
     msg = "status", -- "status" | "diff" | nil
     -- message printed to the status line when direnv environment changes.
@@ -107,13 +110,13 @@ Here are some examples on how to load the direnv before the LSP starts:
 
 -- Setup signals for when direnv.nvim is finished
 require("direnv-nvim").setup({
-	async = true, -- not strictly necessary
-	on_env_update = function()
-		vim.api.nvim_exec_autocmds("User", { pattern = "DirenvLoaded" })
-	end,
-	on_no_direnv = function()
-		vim.api.nvim_exec_autocmds("User", { pattern = "DirenvNotFound" })
-	end,
+ async = true, -- not strictly necessary
+ on_env_update = function()
+  vim.api.nvim_exec_autocmds("User", { pattern = "DirenvLoaded" })
+ end,
+ on_no_direnv = function()
+  vim.api.nvim_exec_autocmds("User", { pattern = "DirenvNotFound" })
+ end,
 })
 ```
 
@@ -128,10 +131,10 @@ require("lspconfig").clangd.setup({ autostart = false })
 
 -- Start lsp only after direnv.nvim is finished
 vim.api.nvim_create_autocmd("User", {
-	pattern = { "DirenvLoaded", "DirenvNotFound" }, -- this example starts the lsp when the direnv was loaded or when there is no .envrc found
-	callback = function()
-		vim.cmd("LspStart")
-	end,
+ pattern = { "DirenvLoaded", "DirenvNotFound" }, -- this example starts the lsp when the direnv was loaded or when there is no .envrc found
+ callback = function()
+  vim.cmd("LspStart")
+ end,
 })
 ```
 
@@ -139,17 +142,17 @@ vim.api.nvim_create_autocmd("User", {
 
 ``` lua
 vim.g.rustaceanvim = {
-	server = {
-		auto_attach = function(bufnr)
-			vim.api.nvim_create_autocmd("User", {
-				pattern = { "DirenvLoaded", "DirenvNotFound" },
-				callback = function()
-					require("rustaceanvim.lsp").start(bufnr)
-				end,
-				once = true,
-			})
-			return false
-		end,
-	},
+ server = {
+  auto_attach = function(bufnr)
+   vim.api.nvim_create_autocmd("User", {
+    pattern = { "DirenvLoaded", "DirenvNotFound" },
+    callback = function()
+     require("rustaceanvim.lsp").start(bufnr)
+    end,
+    once = true,
+   })
+   return false
+  end,
+ },
 }
 ```
