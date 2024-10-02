@@ -65,6 +65,7 @@ M.allow = function()
 	local cwd = get_cwd()
 	if cwd ~= nil then
 		M.allow_(cwd)
+		OPTS.on_env_allowed()
 	end
 end
 vim.api.nvim_create_user_command("DirenvAllow", M.allow, { desc = "direnv allow" })
