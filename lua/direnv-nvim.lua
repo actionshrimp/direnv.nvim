@@ -93,8 +93,8 @@ M.hook_body = function(export_result)
 		elseif OPTS.hook.msg == "status" then
 			M.status()
 		end
-		OPTS.on_env_update()
 	end
+	OPTS.on_env_update()
 end
 
 M.hook_ = function(cwd)
