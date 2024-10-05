@@ -9,9 +9,6 @@ local default_opts = {
 		autocmd_pattern = "*",
 	},
 	async = false,
-	on_hook_start = function() end,
-	on_env_update = function() end,
-	on_no_direnv = function() end,
 	hook = {
 		msg = "status", -- "diff" | "status" | nil,
 	},
