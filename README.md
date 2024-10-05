@@ -49,16 +49,7 @@ The full list of available options and their defaults are loaded from [here](./l
 
   async = false, -- false | true
     -- if false, loading environment from direnv into vim is done synchronously. This will block the UI, so if the direnv setup takes a while, you may want to look into setting this to true.
-    -- if true, vim will evaluate the direnv environment in the background, and then call the function passed as `opts.on_env_update` once evaluation is complete.
-
-  on_hook_start = function () end,
-    -- called just before executing direnv.
-
-  on_env_update = function () end,
-    -- called after direnv updates.
-
-  on_no_direnv = function () end,
-    -- called when no direnv is found for the current buffer.
+    -- if true, vim will evaluate the direnv environment in the background. direnv.nvim will then fire various autocmds depending on how the evaluation went. See below for more detail here!
 
   hook = {
     msg = "status", -- "status" | "diff" | nil
@@ -70,26 +61,34 @@ The full list of available options and their defaults are loaded from [here](./l
 }
 ```
 
-#### Manually firing the hook
+#### Autocmds events fired by the plugin
 
-If you'd rather try configuring the `autocmd`s yourself, you can use something like this:
+If you're using the `async = true` config option you will likely find these useful.
+
+These are all under the 'User' event, and the 'direnv-nvim' autocmd group.
+
+- `DirenvNotFound` - when no direnv was found for the current context
+- `DirenvBlocked` - when a direnv was found, but has not been allowed with `direnv allow` yet
+- `DirenvAllowed` - when the direnv has been allowed via the :DirenvAllow function
+- `DirenvStart` - when direnv beings evaluation
+- `DirenvUpdated` - when vim's environment was actually updated by direnv
+- `DirenvReady` - when direnv has finished evaluating - either the env was updated or left unchanged
+
+You can subscribe to these events with something like:
 
 ```lua
-{
-    "actionshrimp/direnv.nvim", config = function() 
-     vim.api.nvim_create_autocmd(..., {
-         pattern = ...,
-         callback = function ()
-             require("direnv-nvim").hook(opts)
-         end
-     })
-     end
-}
+vim.api.nvim_create_autocmd("User", {
+        group = "direnv-nvim",
+        pattern = { "DirenvLoaded", "DirenvNotFound" },
+        callback = function()
+        -- your action here
+        end,
+})
 ```
 
-There is a variant of the `hook` function, `hook_(dir)`, which takes the target `direnv` directory.
+However, the plugin provides a convenience function `on_direnv_finished`, which provides an easy way of subscribing to common events for given filetypes - this is particularly useful for configuring LSPs - see the LSP config examples below.
 
-Note that currently `direnv.nvim`'s options still apply in some areas. You can also call the vim command `:DirenvHook` to fire the hook function manually.
+#### User commands provided by the plugin
 
 The plugin also provides lua functions and vim commands for performing `direnv status` and `direnv allow`, via:
 
@@ -98,25 +97,13 @@ The plugin also provides lua functions and vim commands for performing `direnv s
 :DirenvAllow
 ```
 
+If you need to reload the environment after running :DirenvAllow, the simplest way to proceed is to just type `:e` and the plugin will retrigger with the newly enabled environment.
+
 ### LSP config examples
 
 Here are some examples on how to load the direnv before the LSP starts:
 
 ``` lua
--- direnv-nvim.lua
-
--- Setup signals for when direnv.nvim is finished
-require("direnv-nvim").setup({
-	async = true, -- not strictly necessary
-	on_env_update = function()
-		vim.api.nvim_exec_autocmds("User", { pattern = "DirenvLoaded" })
-	end,
-	on_no_direnv = function()
-		vim.api.nvim_exec_autocmds("User", { pattern = "DirenvNotFound" })
-	end,
-})
-```
-
 #### Using nvim-lspconfig
 
 ``` lua
@@ -126,13 +113,10 @@ require("direnv-nvim").setup({
 require("lspconfig").lua_ls.setup({ autostart = false })
 require("lspconfig").clangd.setup({ autostart = false })
 
--- Start lsp only after direnv.nvim is finished
-vim.api.nvim_create_autocmd("User", {
-	pattern = { "DirenvLoaded", "DirenvNotFound" }, -- this example starts the lsp when the direnv was loaded or when there is no .envrc found
-	callback = function()
+-- Start the LSP on direnv changes for the given filetypes we have defined setup for
+M.on_direnv_finished({ filetype = {"lua", "c"} }, function ()
 		vim.cmd("LspStart")
-	end,
-})
+end)
 ```
 
 #### Using [rustaceanvim](https://github.com/mrcjkb/rustaceanvim)
@@ -141,13 +125,9 @@ vim.api.nvim_create_autocmd("User", {
 vim.g.rustaceanvim = {
 	server = {
 		auto_attach = function(bufnr)
-			vim.api.nvim_create_autocmd("User", {
-				pattern = { "DirenvLoaded", "DirenvNotFound" },
-				callback = function()
+            M.on_direnv_finished({ once = true }, function ()
 					require("rustaceanvim.lsp").start(bufnr)
-				end,
-				once = true,
-			})
+            end)
 			return false
 		end,
 	},
