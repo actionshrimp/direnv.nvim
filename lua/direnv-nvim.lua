@@ -190,7 +190,7 @@ M.on_direnv_finished = function(opts, cb)
 		callback = function()
 			if
 				opts["filetype"] ~= nil
-				and (opts["filetype"] == vim.bo.filetype or _has_filetype(opts["filetype"], vim.bo.filetype))
+				or (opts["filetype"] == vim.bo.filetype or _has_filetype(opts["filetype"], vim.bo.filetype))
 			then
 				cb()
 			end
