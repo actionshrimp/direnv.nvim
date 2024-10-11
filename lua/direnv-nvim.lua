@@ -1,6 +1,9 @@
 local M = {}
 local OPTS = require("direnv-nvim/opts")
-local LOADED = nil
+
+local augroup = vim.api.nvim_create_augroup("direnv-nvim", {
+	clear = true,
+})
 
 local get_cwd = function()
 	if OPTS.type == "buffer" then
@@ -58,6 +61,7 @@ vim.api.nvim_create_user_command("DirenvStatus", M.status, { desc = "direnv stat
 
 M.allow_ = function(cwd)
 	vim.system({ "direnv", "allow" }, { text = true, cwd = cwd }):wait()
+	vim.api.nvim_exec_autocmds("User", { pattern = "DirenvAllowed", group = augroup })
 	M.status_(cwd)
 end
 
@@ -93,12 +97,13 @@ M.hook_body = function(export_result)
 		elseif OPTS.hook.msg == "status" then
 			M.status()
 		end
-		OPTS.on_env_update()
+		vim.api.nvim_exec_autocmds("User", { pattern = "DirenvUpdated", group = augroup })
 	end
+	vim.api.nvim_exec_autocmds("User", { pattern = "DirenvReady", group = augroup })
 end
 
 M.hook_ = function(cwd)
-	OPTS.on_hook_start()
+	vim.api.nvim_exec_autocmds("User", { pattern = "DirenvStart", group = augroup })
 	if OPTS.async then
 		vim.system({ "direnv", "export", "json" }, { text = true, cwd = cwd }, function(export_result)
 			vim.schedule(function()
@@ -118,13 +123,13 @@ M.hook = function()
 		if rc_found(cwd) and rc_allowed(cwd) then
 			M.hook_(cwd)
 		elseif rc_found(cwd) then
-			vim.notify("direnv environment is blocked, please 'direnv allow' it (:DirenvAllow)")
+			vim.notify("direnv environment is blocked, please 'direnv allow' it (:DirenvAllow)", vim.log.levels.WARN)
+			vim.api.nvim_exec_autocmds("User", { pattern = "DirenvBlocked", group = augroup })
 		else
-			OPTS.on_no_direnv()
+			vim.api.nvim_exec_autocmds("User", { pattern = "DirenvNotFound", group = augroup })
 		end
 	end
 end
-vim.api.nvim_create_user_command("DirenvHook", M.allow, { desc = "direnv hook" })
 
 local setup_dir = function()
 	vim.api.nvim_create_autocmd(OPTS.dir_setup.autocmd_event, {
@@ -144,6 +149,18 @@ local setup_buffer = function()
 	})
 end
 
+local function _has_filetype(filetypes, ft)
+	if not type(filetypes) == "table" then
+		return false
+	end
+	for _, v in pairs(filetypes) do
+		if v == ft then
+			return true
+		end
+	end
+	return false
+end
+
 M.setup = function(opts)
 	OPTS = vim.tbl_deep_extend("force", OPTS, opts)
 	M.OPTS = OPTS
@@ -152,6 +169,23 @@ M.setup = function(opts)
 	end
 	if OPTS.type == "dir" then
 		setup_dir()
+	end
+	if OPTS.on_direnv_finished ~= nil then
+		local au_opts = OPTS.on_direnv_finished_opts
+
+		vim.api.nvim_create_autocmd("User", {
+			pattern = au_opts["pattern"],
+			group = "direnv-nvim",
+			once = au_opts["once"],
+			callback = function()
+				if
+					au_opts["filetype"] == nil
+					or (au_opts["filetype"] == vim.bo.filetype or _has_filetype(au_opts["filetype"], vim.bo.filetype))
+				then
+					OPTS.on_direnv_finished()
+				end
+			end,
+		})
 	end
 end
 

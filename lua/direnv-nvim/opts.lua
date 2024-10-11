@@ -9,12 +9,13 @@ local default_opts = {
 		autocmd_pattern = "*",
 	},
 	async = false,
-	on_hook_start = function() end,
-	on_env_update = function() end,
-	on_no_direnv = function() end,
 	hook = {
 		msg = "status", -- "diff" | "status" | nil,
 	},
+	on_direnv_finished_opts = {
+		pattern = { "DirenvReady", "DirenvNotFound" },
+	},
+	on_direnv_finished = nil,
 }
 
 return default_opts
