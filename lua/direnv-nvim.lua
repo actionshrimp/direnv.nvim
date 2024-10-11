@@ -149,17 +149,6 @@ local setup_buffer = function()
 	})
 end
 
-M.setup = function(opts)
-	OPTS = vim.tbl_deep_extend("force", OPTS, opts)
-	M.OPTS = OPTS
-	if OPTS.type == "buffer" then
-		setup_buffer()
-	end
-	if OPTS.type == "dir" then
-		setup_dir()
-	end
-end
-
 local function _has_filetype(filetypes, ft)
 	if not type(filetypes) == "table" then
 		return false
@@ -172,30 +161,32 @@ local function _has_filetype(filetypes, ft)
 	return false
 end
 
-M.on_direnv_finished = function(opts, cb)
-	local pattern = { "DirenvReady", "DirenvNotFound" }
-	if opts["pattern"] then
-		pattern = opts["pattern"]
+M.setup = function(opts)
+	OPTS = vim.tbl_deep_extend("force", OPTS, opts)
+	M.OPTS = OPTS
+	if OPTS.type == "buffer" then
+		setup_buffer()
 	end
-
-	local once = false
-	if opts["once"] then
-		once = opts["once"]
+	if OPTS.type == "dir" then
+		setup_dir()
 	end
+	if OPTS.on_direnv_finished ~= nil then
+		local au_opts = OPTS.on_direnv_finished_opts
 
-	vim.api.nvim_create_autocmd("User", {
-		pattern = pattern,
-		group = "direnv-nvim",
-		once = once,
-		callback = function()
-			if
-				opts["filetype"] ~= nil
-				or (opts["filetype"] == vim.bo.filetype or _has_filetype(opts["filetype"], vim.bo.filetype))
-			then
-				cb()
-			end
-		end,
-	})
+		vim.api.nvim_create_autocmd("User", {
+			pattern = au_opts["pattern"],
+			group = "direnv-nvim",
+			once = au_opts["once"],
+			callback = function()
+				if
+					au_opts["filetype"] == nil
+					or (au_opts["filetype"] == vim.bo.filetype or _has_filetype(au_opts["filetype"], vim.bo.filetype))
+				then
+					OPTS.on_direnv_finished()
+				end
+			end,
+		})
+	end
 end
 
 return M

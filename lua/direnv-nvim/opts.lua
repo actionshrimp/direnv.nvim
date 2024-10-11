@@ -12,6 +12,10 @@ local default_opts = {
 	hook = {
 		msg = "status", -- "diff" | "status" | nil,
 	},
+	on_direnv_finished_opts = {
+		pattern = { "DirenvReady", "DirenvNotFound" },
+	},
+	on_direnv_finished = nil,
 }
 
 return default_opts
