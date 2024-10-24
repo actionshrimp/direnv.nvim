@@ -160,19 +160,19 @@ require("lspconfig").clangd.setup({ autostart = false })
     }
 }
 vim.g.rustaceanvim = {
-	server = {
-		auto_attach = function(bufnr)
+    server = {
+        auto_attach = function(bufnr)
             vim.api.nvim_create_autocmd("User", {
-				pattern = { "DirenvLoaded", "DirenvNotFound" },
-				once = true,
-				callback = function()
+                pattern = { "DirenvLoaded", "DirenvNotFound" },
+                once = true,
+                callback = function()
                     if vim.bo.filetype == "rust" then
                         require("rustaceanvim.lsp").start(bufnr)
                     end
-				end,
-			})
-			return false
-		end,
-	},
+                end,
+            })
+            return false
+        end,
+    },
 }
 ```
