@@ -105,7 +105,7 @@ You can subscribe to these events yourself to get more control, with something l
 -- This snippet is more or less what `on_direnv_finished` runs under the hood.
 vim.api.nvim_create_autocmd("User", {
         group = "direnv-nvim",
-        pattern = { "DirenvLoaded", "DirenvNotFound" },
+        pattern = { "DirenvReady", "DirenvNotFound" },
         callback = function()
         -- your action here
         end,
@@ -163,7 +163,7 @@ vim.g.rustaceanvim = {
     server = {
         auto_attach = function(bufnr)
             vim.api.nvim_create_autocmd("User", {
-                pattern = { "DirenvLoaded", "DirenvNotFound" },
+                pattern = { "DirenvReady", "DirenvNotFound" },
                 once = true,
                 callback = function()
                     if vim.bo.filetype == "rust" then
