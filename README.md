@@ -86,7 +86,7 @@ The full list of available options and their defaults are loaded from [here](./l
 }
 ```
 
-#### Autocmds events fired by the plugin
+#### Events fired by the plugin
 
 The plugin provides a convenience option, `on_direnv_finished`, which provides a simple easy way of running a callback when `direnv` has finished, but you may want a bit more control.
 
