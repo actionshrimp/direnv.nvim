@@ -67,6 +67,9 @@ The full list of available options and their defaults are loaded from [here](./l
     -- if false, loading environment from direnv into vim is done synchronously. This will block the UI, so if the direnv setup takes a while, you may want to look into setting this to true.
     -- if true, vim will evaluate the direnv environment in the background. direnv.nvim will then fire various autocmds depending on how the evaluation went. See below for more detail here!
 
+  get_cwd = nil, -- (fun(): string | nil) | nil
+    -- if defined, will be used to determine the cwd, regardless if the type option. Useful to solve specific needs, like choosing the git directory on git-related buffers
+
   hook = {
     msg = "status", -- "status" | "diff" | nil
     -- message printed to the status line when direnv environment changes.

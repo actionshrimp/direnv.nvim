@@ -6,6 +6,10 @@ local augroup = vim.api.nvim_create_augroup("direnv-nvim", {
 })
 
 local get_cwd = function()
+	if OPTS.get_cwd then
+		return OPTS.get_cwd()
+	end
+
 	if OPTS.type == "buffer" then
 		local buf = vim.api.nvim_buf_get_name(0)
 		if vim.fn.filereadable(buf) == 1 then
