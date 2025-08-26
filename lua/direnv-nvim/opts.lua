@@ -1,5 +1,24 @@
+---@class DirenvAutocmdSetup
+---@field autocmd_event string
+---@field autocmd_pattern string
+
+---@class DirenvHook
+---@field msg "status" | "diff" | nil
+
+---@class DirenvOnFinishedOpts
+---@field pattern table<string>
+
+---@class DirenvOpts
+---@field type "buffer" | "dir"
+---@field buffer_setup DirenvAutocmdSetup
+---@field dir_setup DirenvAutocmdSetup
+---@field async boolean
+---@field get_cwd (fun(): string | nil) | nil
+---@field hook DirenvHook
+---@field on_direnv_finished_opts DirenvOnFinishedOpts
+---@field on_direnv_finished fun() | nil
 local default_opts = {
-	type = "buffer", -- "buffer" | "dir"
+	type = "buffer",
 	buffer_setup = {
 		autocmd_event = "BufEnter",
 		autocmd_pattern = "*",
@@ -10,7 +29,7 @@ local default_opts = {
 	},
 	async = false,
 	hook = {
-		msg = "status", -- "diff" | "status" | nil,
+		msg = "status",
 	},
 	on_direnv_finished_opts = {
 		pattern = { "DirenvReady", "DirenvNotFound" },
