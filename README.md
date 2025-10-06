@@ -79,7 +79,8 @@ The full list of available options and their defaults are loaded from [here](./l
   }
 
   -- if non-nil, this option is called when direnv has finished
-  on_direnv_finished = nil -- nil | function () end
+  -- args is a table with two properties: buffer and filetype
+  on_direnv_finished = nil -- nil | function (args) end
 
   on_direnv_finished_opts = {
 		pattern = { "DirenvReady", "DirenvNotFound" }, -- can be amended to include additional autocmd events from the list below
