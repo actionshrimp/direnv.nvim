@@ -181,12 +181,15 @@ M.setup = function(opts)
 			pattern = au_opts["pattern"],
 			group = "direnv-nvim",
 			once = au_opts["once"],
-			callback = function()
+			callback = function(args)
 				if
 					au_opts["filetype"] == nil
-					or (au_opts["filetype"] == vim.bo.filetype or _has_filetype(au_opts["filetype"], vim.bo.filetype))
+					or (au_opts["filetype"] == vim.bo[args.buf].filetype or _has_filetype(au_opts["filetype"], vim.bo[args.buf].filetype))
 				then
-					OPTS.on_direnv_finished()
+					OPTS.on_direnv_finished({
+						buffer = args.buf,
+						filetype = vim.bo[args.buf].filetype,
+					})
 				end
 			end,
 		})

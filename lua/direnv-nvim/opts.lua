@@ -8,6 +8,10 @@
 ---@class DirenvOnFinishedOpts
 ---@field pattern table<string>
 
+---@class DirenvOnFinishedCallbackArgs
+---@field buffer number
+---@field filetype string
+
 ---@class DirenvOpts
 ---@field type "buffer" | "dir"
 ---@field buffer_setup DirenvAutocmdSetup
@@ -16,7 +20,7 @@
 ---@field get_cwd (fun(): string | nil) | nil
 ---@field hook DirenvHook
 ---@field on_direnv_finished_opts DirenvOnFinishedOpts
----@field on_direnv_finished fun() | nil
+---@field on_direnv_finished fun(args: DirenvOnFinishedCallbackArgs) | nil
 local default_opts = {
 	type = "buffer",
 	buffer_setup = {
